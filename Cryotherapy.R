@@ -1,5 +1,5 @@
 # ==============================================================================
-# UCI Cryotherapy | MixedDeepMM >= 0.2.1 | six model configurations
+# UCI Cryotherapy | MixedDeepMM >= 0.1.0 | six model configurations
 # Gaussian / Student-t / skew-t x single / two heads
 # 20 independent initializations per model; final paper report is Mean +/- SE.
 # Main clustering: Single=common first hidden layer; Two=shared-tail layer.
