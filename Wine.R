@@ -1,5 +1,5 @@
 # ============================================================================
-# UCI Wine | MixedDeepMM 0.2.1 | continuous-data DGMM / RDMM / DStMM
+# UCI Wine | MixedDeepMM 0.1.0 | continuous-data DGMM / RDMM / DStMM
 # 20 repeated fits PER model, ONE initialization per fit (nstart = 1).
 # No K-means comparison. No Gower distance/silhouette (all predictors numeric).
 # Final result folder contains ONLY:
