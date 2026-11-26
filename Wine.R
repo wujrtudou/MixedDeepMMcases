@@ -49,8 +49,8 @@ get_script_dir <- function() {
 }
 
 if (!requireNamespace("MixedDeepMM", quietly = TRUE) ||
-    utils::packageVersion("MixedDeepMM") < "0.2.1") {
-  stop("Please install the bundled MixedDeepMM_0.2.1.tar.gz package.")
+    utils::packageVersion("MixedDeepMM") != "0.1.0") {
+  stop("This analysis requires MixedDeepMM 0.1.0. Install the versioned source package MixedDeepMM_0.1.0.tar.gz before fitting.")
 }
 
 for (pkg in c("mvtnorm", "corpcor", "GIGrvg")) {
@@ -305,11 +305,8 @@ plot_all <- function() {
   plot_panel(truth, "(A) True Wine classes", "n = 178; 13 continuous inputs", TRUE)
   for (j in seq_along(models)) {
     nm <- names(models)[[j]]
-    zz <- summary_table[summary_table$Model == nm, , drop = FALSE]
-    note <- sprintf("ARI %.3f (%.3f)",
-                    zz$BIC_Mean, zz$BIC_SE, zz$ARI_Mean, zz$ARI_SE)
     plot_panel(consensus[[nm]], paste0("(", LETTERS[j + 1L], ") ", nm,
-                                              " consensus"), note)
+                                              " consensus"))
   }
   graphics::mtext("UCI Wine",
                   side = 3, outer = TRUE, line = 0.0, cex = 1.0, font = 2)

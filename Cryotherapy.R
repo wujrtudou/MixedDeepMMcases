@@ -1,5 +1,5 @@
 # ==============================================================================
-# UCI Cryotherapy | MixedDeepMM >= 0.1.0 | six model configurations
+# UCI Cryotherapy | MixedDeepMM 0.1.0 | six model configurations
 # Gaussian / Student-t / skew-t x single / two heads
 # 20 independent initializations per model; final paper report is Mean +/- SE.
 # Main clustering: Single=common first hidden layer; Two=shared-tail layer.
@@ -72,8 +72,8 @@ types <- c(age = "continuous", time = "continuous", area = "continuous", n_warts
 
 if (RUN_MODE == "fit") {
   if (!requireNamespace("MixedDeepMM", quietly = TRUE) ||
-      utils::packageVersion("MixedDeepMM") < "0.2.1")
-    stop("Install included MixedDeepMM_0.2.1.tar.gz before fitting.")
+      utils::packageVersion("MixedDeepMM") != "0.1.0")
+    stop("This analysis requires MixedDeepMM 0.1.0. Install the versioned source package MixedDeepMM_0.1.0.tar.gz before fitting.")
   if (!requireNamespace("GIGrvg", quietly = TRUE))
     stop("Install GIGrvg for skew-t models: install.packages('GIGrvg').")
   raw <- utils::read.csv(DATA_FILE, check.names = FALSE, stringsAsFactors = FALSE,
@@ -113,8 +113,8 @@ if (RUN_MODE == "fit") {
     "Cryotherapy subset of the original UCI wart data (90 patients); sex and wart type enter as categorical predictors; treatment outcome is withheld.",
     "Single-head primary clustering: common first mixture layer.",
     "Two-head primary clustering: shared-tail mixture layer.",
-    "Best fit: highest mean Gower silhouette across completed restarts (ties by LogLik). External labels never select models.",
-    "True classes:", capture.output(print(table(truth)))
+    "Best fit: highest average Gower silhouette width of an individual completed restart (ties by LogLik). External labels never select models.",
+    "Observed treatment outcomes:", capture.output(print(table(truth)))
   ), out("Data_Description.txt"))
   rm(raw)
 } else {
@@ -135,8 +135,8 @@ if (!requireNamespace("cluster", quietly = TRUE)) {
   stop("Install 'cluster' to compute the mandatory Gower silhouette: install.packages('cluster').")
 }
 if (!requireNamespace("MixedDeepMM", quietly = TRUE) ||
-    utils::packageVersion("MixedDeepMM") < "0.2.1") {
-  stop("Install included MixedDeepMM_0.2.1.tar.gz before running this script.")
+    utils::packageVersion("MixedDeepMM") != "0.1.0") {
+  stop("This analysis requires MixedDeepMM 0.1.0. Install the versioned source package MixedDeepMM_0.1.0.tar.gz before running this script.")
 }
 gower_dist <- MixedDeepMM::mixeddeepmm_gower_distance(X, types)
 
@@ -194,7 +194,7 @@ if (RUN_MODE == "fit") {
   all_inits <- empty_init("", 0L, 0L)[FALSE, , drop = FALSE]
   model_results <- data.frame()
   cat("\nInput:", DATA_FILE, "\nOutput:", OUT_DIR, "\n")
-  cat("Six configurations x", NSTART, "single-start fits. Select by mean Gower Silhouette (LogLik tie-break only).\n")
+  cat("Six configurations x", NSTART, "single-start fits. Select an individual best fit by Gower silhouette (LogLik tie-break only); paper summaries use all valid fits.\n")
   for (name in names(models)) {
     cfg <- models[[name]]
     family <- cfg[["family"]]
@@ -327,7 +327,7 @@ if (RUN_MODE == "fit") {
       writeLines(c(paste("Model:", name),
                    paste("Selected initialization:", best_row$Initialization),
                    paste("Seed:", best_row$Seed),
-                   paste("Selection: maximum mean Gower Silhouette across completed starts; LogLik for ties only."),
+                   paste("Selection: highest Gower silhouette of an individual completed start; LogLik for ties only."),
                    paste("Gower Silhouette:", fmt(best_row$Gower_Silhouette, 5)),
                    paste("BIC (secondary):", fmt(best_row$BIC, 5)),
                    paste("ARI:", fmt(best_row$ARI, 5)),
@@ -351,7 +351,7 @@ if (RUN_MODE == "fit") {
         " | MR ", fmt(selected$MR, 4), "\n", sep = "")
     gc(verbose = FALSE)
   }
-  # Compare the six selected models by mean Gower silhouette (descriptive only).
+  # Compare the six selected individual fits by Gower silhouette (descriptive only).
   # This never uses the external truth and does not refit or alter the MCEM objective.
   valid_model_rows <- which(model_results$Status == "OK" &
                             is.finite(model_results$Gower_Silhouette))
@@ -362,7 +362,7 @@ if (RUN_MODE == "fit") {
                         "Nonempty_Clusters"), drop = FALSE]
     leaderboard$Silhouette_Rank <- seq_len(nrow(leaderboard))
     save_csv(leaderboard, out("reports", "six_model_gower_ranking.csv"))
-    writeLines(c("Across-model ranking: mean Gower silhouette, descending.",
+    writeLines(c("Across-model ranking of selected individual fits: Gower silhouette, descending.",
                  "Exact ties have no statistical interpretation; no external label was used.",
                  "The first row has the maximum silhouette among the six selected fitted models.",
                  capture.output(print(leaderboard, row.names = FALSE))),
@@ -373,10 +373,10 @@ if (RUN_MODE == "fit") {
                paste("Runs per model:", NSTART),
                "Single-head paper clustering: common first latent layer.",
                "Two-head paper clustering: shared-tail latent layer.",
-               "Fit selection: maximum mean Gower silhouette among completed fits; only ties by LogLik.",
+               "Individual best-fit selection: highest Gower silhouette among completed fits; only ties by LogLik. Paper summaries use all valid fits.",
                "This script does not select individual EM iterations by silhouette.",
                "BIC is secondary diagnostic only; neither BIC nor external labels select fits.",
-               "ARI/MR use external labels only after fit selection.",
+               "ARI/MR use external labels for evaluation only, never for fit selection.",
                "Multiple starts are restarts on one dataset, not independent samples.",
                "Selected fits:",
                capture.output(print(model_results[, c("Model", "Status", "Initialization",
@@ -420,7 +420,7 @@ draw_comparison <- function(xy, x_lab, y_lab) {
   on.exit(graphics::par(op), add = TRUE)
   graphics::par(mfrow = c(4, 2), mar = c(4.5, 5, 4.3, 1),
                 mgp = c(2.6, 0.8, 0), cex = 1)
-  plot_groups(xy, truth, "True classes", x_lab = x_lab, y_lab = y_lab)
+  plot_groups(xy, truth, "Observed treatment outcomes", x_lab = x_lab, y_lab = y_lab)
   for (name in names(model_titles)) {
     sel <- model_results[model_results$Model == name, , drop = FALSE]
     det <- if (nrow(sel) == 1L && sel$Status == "OK" &&
@@ -550,8 +550,8 @@ if (!is.matrix(final_ord$points) || ncol(final_ord$points) < 2L) {
 final_xy <- final_ord$points[, 1:2, drop = FALSE]
 final_xy_range <- list(x = range(final_xy[, 1]), y = range(final_xy[, 2]))
 
-# In plot_only mode, only existing result files can be used. Original 0.2.1
-# folders saved only BEST labels and therefore cannot reconstruct consensus.
+# In plot_only mode, only existing result files can be used. Folders
+# containing only BEST labels cannot reconstruct the all-run consensus.
 final_runs <- if (RUN_MODE == "fit") {
   all_inits
 } else {
@@ -607,7 +607,7 @@ final_csv <- out(final_csv_name)
 save_csv(final_table, final_csv)
 
 # Do not silently label a best-start plot as a 20-run consensus plot.
-# Old result folders (v0.2.1) lack per-start MAP assignments.
+# Result folders without per-start MAP assignments cannot reconstruct consensus.
 if (RUN_MODE == "plot_only" &&
     any(vapply(final_partitions, is.null, logical(1L)))) {
   stop("Mean +/- SE CSV saved, but genuine 20-run consensus figure requires ",
@@ -705,7 +705,7 @@ stopifnot(
 cols <- c("#2878B5", "#E69F40")
 
 panel_names <- c(
-  "True Labels",
+  "Observed Treatment Outcomes",
   "DGMM Single",
   "DGMM Double",
   "RDMM Single",
@@ -771,7 +771,7 @@ draw_simple_figure <- function() {
   )
   
   mtext(
-    "Cryotherapy: True Labels vs Six Model Results",
+    "Cryotherapy: Observed Outcomes and Six Model Results",
     outer = TRUE,
     side = 3,
     line = 0,
